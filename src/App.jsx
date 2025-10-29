@@ -1,14 +1,8 @@
 import './App.css'
 import SideBar from './SideBar'
-import ContentArea from './ContentArea';
+import HomeView from './HomeView';
 import PlayerBar from './PlayerBar';
 import { useState } from 'react';
-
-const mockPlaylists = [
-  { id: 1, title: 'Pop Chill', image: 'https://placehold.co/50x50/1e293b/ffffff?text=PCH' },
-  { id: 2, title: 'Lo-Fi Beats', image: 'https://placehold.co/50x50/374151/ffffff?text=LOFI' },
-  { id: 3, title: 'Rock Essentials', image: 'https://placehold.co/50x50/4b5563/ffffff?text=ROCK' },
-];
 
 const mockSongs = [
   { id: 101, title: 'Running Up That Hill', artist: 'Kate Bush', album: 'Hounds of Love', duration: '5:03', isLiked: true },
@@ -18,10 +12,21 @@ const mockSongs = [
   { id: 105, title: 'Shape of You', artist: 'Ed Sheeran', album: '÷', duration: '3:53', isLiked: false },
 ];
 
+const mockPlaylists = [
+  { id: 1, title: 'Pop Chill', image: 'https://placehold.co/50x50/1e293b/ffffff?text=PCH', description: 'Música relajante para estudiar o trabajar.', color: 'bg-indigo-700/80', tracks: mockSongs.slice(0, 3) },
+  { id: 2, title: 'Lo-Fi Beats', image: 'https://placehold.co/50x50/374151/ffffff?text=LOFI', description: 'Ritmos tranquilos para la concentración.', color: 'bg-amber-700/80', tracks: mockSongs.slice(1, 4) },
+  { id: 3, title: 'Rock Essentials', image: 'https://placehold.co/50x50/4b5563/ffffff?text=ROCK', description: 'Los himnos más grandes del rock clásico.', color: 'bg-red-700/80', tracks: mockSongs },
+];
+
+
 export default function App() {
+  // Estados de la app
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSong, setCurrentSong] = useState(mockSongs[0])
+  const [currentView, setCurrentView] = useState('home');
 
+
+  //logica
   const togglePlay = () => {
     setIsPlaying(!isPlaying)
   }
@@ -32,19 +37,69 @@ export default function App() {
     console.log(`Reproduciendo: ${song.title}`);
   }
 
-  return (
-    <div className='flex flex-col h-screen bg-gray-900'>
-      <div className='flex flex-1 overflow-hidden'>
-        <SideBar playlists={mockPlaylists} />
-        <ContentArea songs={mockSongs} onSelectSong={handleSongSelect} />
-      </div>
+  const handleNextSong = () => {
+    const currentIndex = mockSongs.findIndex(s => s.id === currentSong.id)
+    const nextIndex = (currentIndex + 1) % mockSongs.length;
+    setCurrentSong(mockSongs[nextIndex]);
+    setIsPlaying(true);
+  }
 
+  const handlePrevSong = () => {
+    const currentIndex = mockSongs.findIndex(s => s.id === currentSong.id)
+    const prevIndex = (currentIndex - 1 + mockSongs.length) % mockSongs.length;
+    setCurrentSong(mockSongs[prevIndex]);
+    setIsPlaying(true);
+  }
+
+  // render contenido central
+  const renderContent = () => {
+    if (currentView === 'home') {
+      return <HomeView onSelectSong={handleSongSelect} />
+    }
+    if (typeof currentView === 'object' && currentView.name === 'playlist') {
+      const playlist = mockPlaylists.find(p => p.id === currentView.id)
+      return (
+        <PlaylistDetail
+          playlist={playlist}
+          onSelectSong={handleSelectSong}
+          togglePlay={togglePlay}
+          isPlaying={isPlaying}
+        />
+      )
+    }
+    if (currentView === 'search') {
+      return (
+        <div className="flex-1 p-6 overflow-y-auto bg-gray-900 text-white">
+          <h1 className="text-4xl font-bold mt-20">Vista de Búsqueda</h1>
+          <p className="mt-4 text-gray-400">Aquí se mostrarán los resultados de búsqueda.</p>
+        </div>
+      );
+    }
+    return <div className='p-6 text-white'>Vista no encontrada</div>;
+  };
+  // funcion vista
+  const setView = (view) => {
+    setCurrentView(view);
+  };
+
+  return (
+    <div className='flex h-screen bg-gray-900 text-white'>
+      <SideBar currentView={currentView} setView={setView} playlists={mockPlaylists} />
+
+      {/* Contenido Principal - Renderiza la vista actual */}
+      {renderContent()}
+
+      {/* Player (Reproductor) - Pasa la lógica de reproducción */}
       <PlayerBar
         isPlaying={isPlaying}
         togglePlay={togglePlay}
-        currentSong={currentSong} />
+        currentSong={currentSong}
+        handleNextSong={handleNextSong}
+        handlePrevSong={handlePrevSong}
+      />
     </div>
   )
+
 }
 
 
